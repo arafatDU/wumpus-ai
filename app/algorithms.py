@@ -40,10 +40,10 @@ class AgentBrain:
         self.cell_matrix = None
         self.init_cell_matrix = None
 
-        self.cave_cell = Cell.Cell((-1, -1), 10, Cell.Object.EMPTY.value)
+        self.cave_cell = cell.Cell((-1, -1), 10, cell.Object.EMPTY.value)
         self.agent_cell = None
         self.init_agent_cell = None
-        self.KB = KnowledgeBase.KnowledgeBase()
+        self.KB = knowledge_base.KnowledgeBase()
         self.path = []
         self.action_list = []
         self.score = 0
@@ -60,8 +60,8 @@ class AgentBrain:
         self.cell_matrix = [[None for _ in range(self.map_size)] for _ in range(self.map_size)]
         for ir in range(self.map_size):
             for ic in range(self.map_size):
-                self.cell_matrix[ir][ic] = Cell.Cell((ir, ic), self.map_size, raw_map[ir][ic])
-                if Cell.Object.AGENT.value in raw_map[ir][ic]:
+                self.cell_matrix[ir][ic] = cell.Cell((ir, ic), self.map_size, raw_map[ir][ic])
+                if cell.Object.AGENT.value in raw_map[ir][ic]:
                     self.agent_cell = self.cell_matrix[ir][ic]
                     self.agent_cell.update_parent(self.cave_cell)
                     self.init_agent_cell = copy.deepcopy(self.agent_cell)
@@ -171,23 +171,23 @@ class AgentBrain:
             raise TypeError("Error: " + self.add_action.__name__)
 
 
-    def add_new_percepts_to_KB(self, cell):
-        adj_cell_list = cell.get_adj_cell_list(self.cell_matrix)
+    def add_new_percepts_to_KB(self, cell_instance):
+        adj_cell_list = cell_instance.get_adj_cell_list(self.cell_matrix)
 
        
         sign = '-'
-        if cell.exist_pit():
+        if cell_instance.exist_pit():
             sign = '+'
-            self.KB.add_clause([cell.get_literal(Cell.Object.WUMPUS, '-')])
-        self.KB.add_clause([cell.get_literal(Cell.Object.PIT, sign)])
+            self.KB.add_clause([cell_instance.get_literal(cell.Object.WUMPUS, '-')])
+        self.KB.add_clause([cell_instance.get_literal(cell.Object.PIT, sign)])
         sign_pit = sign
 
         
         sign = '-'
-        if cell.exist_wumpus():
+        if cell_instance.exist_wumpus():
             sign = '+'
-            self.KB.add_clause([cell.get_literal(Cell.Object.PIT, '-')])
-        self.KB.add_clause([cell.get_literal(Cell.Object.WUMPUS, sign)])
+            self.KB.add_clause([cell_instance.get_literal(cell.Object.PIT, '-')])
+        self.KB.add_clause([cell_instance.get_literal(cell.Object.WUMPUS, sign)])
         sign_wumpus = sign
 
   
@@ -196,53 +196,53 @@ class AgentBrain:
 
      
         sign = '-'
-        if cell.exist_breeze():
+        if cell_instance.exist_breeze():
             sign = '+'
-        self.KB.add_clause([cell.get_literal(Cell.Object.BREEZE, sign)])
+        self.KB.add_clause([cell_instance.get_literal(cell.Object.BREEZE, sign)])
 
 
         sign = '-'
-        if cell.exist_stench():
+        if cell_instance.exist_stench():
             sign = '+'
-        self.KB.add_clause([cell.get_literal(Cell.Object.STENCH, sign)])
+        self.KB.add_clause([cell_instance.get_literal(cell.Object.STENCH, sign)])
 
         
-        if cell.exist_breeze():
+        if cell_instance.exist_breeze():
             
-            clause = [cell.get_literal(Cell.Object.BREEZE, '-')]
+            clause = [cell_instance.get_literal(cell.Object.BREEZE, '-')]
             for adj_cell in adj_cell_list:
-                clause.append(adj_cell.get_literal(Cell.Object.PIT, '+'))
+                clause.append(adj_cell.get_literal(cell.Object.PIT, '+'))
             self.KB.add_clause(clause)
 
           
             for adj_cell in adj_cell_list:
-                clause = [cell.get_literal(Cell.Object.BREEZE, '+'),
-                          adj_cell.get_literal(Cell.Object.PIT, '-')]
+                clause = [cell_instance.get_literal(cell.Object.BREEZE, '+'),
+                          adj_cell.get_literal(cell.Object.PIT, '-')]
                 self.KB.add_clause(clause)
 
         
         else:
             for adj_cell in adj_cell_list:
-                clause = [adj_cell.get_literal(Cell.Object.PIT, '-')]
+                clause = [adj_cell.get_literal(cell.Object.PIT, '-')]
                 self.KB.add_clause(clause)
 
         
-        if cell.exist_stench():
+        if cell_instance.exist_stench():
            
-            clause = [cell.get_literal(Cell.Object.STENCH, '-')]
+            clause = [cell_instance.get_literal(cell.Object.STENCH, '-')]
             for adj_cell in adj_cell_list:
-                clause.append(adj_cell.get_literal(Cell.Object.WUMPUS, '+'))
+                clause.append(adj_cell.get_literal(cell.Object.WUMPUS, '+'))
             self.KB.add_clause(clause)
 
             for adj_cell in adj_cell_list:
-                clause = [cell.get_literal(Cell.Object.STENCH, '+'),
-                          adj_cell.get_literal(Cell.Object.WUMPUS, '-')]
+                clause = [cell_instance.get_literal(cell.Object.STENCH, '+'),
+                          adj_cell.get_literal(cell.Object.WUMPUS, '-')]
                 self.KB.add_clause(clause)
 
   
         else:
             for adj_cell in adj_cell_list:
-                clause = [adj_cell.get_literal(Cell.Object.WUMPUS, '-')]
+                clause = [adj_cell.get_literal(cell.Object.WUMPUS, '-')]
                 self.KB.add_clause(clause)
 
         print(self.KB.KB)
@@ -321,7 +321,7 @@ class AgentBrain:
 
         
             if self.agent_cell.exist_stench():
-                valid_adj_cell: Cell.Cell
+                valid_adj_cell: cell.Cell
                 for valid_adj_cell in valid_adj_cell_list:
                     print("Infer: ", end='')
                     print(valid_adj_cell.map_pos)
@@ -330,7 +330,7 @@ class AgentBrain:
 
                     
                     self.add_action(Action.INFER_WUMPUS)
-                    not_alpha = [[valid_adj_cell.get_literal(Cell.Object.WUMPUS, '-')]]
+                    not_alpha = [[valid_adj_cell.get_literal(cell.Object.WUMPUS, '-')]]
                     have_wumpus = self.KB.infer(not_alpha)
 
              
@@ -348,7 +348,7 @@ class AgentBrain:
                     else:
                         
                         self.add_action(Action.INFER_NOT_WUMPUS)
-                        not_alpha = [[valid_adj_cell.get_literal(Cell.Object.WUMPUS, '+')]]
+                        not_alpha = [[valid_adj_cell.get_literal(cell.Object.WUMPUS, '+')]]
                         have_no_wumpus = self.KB.infer(not_alpha)
 
                  
@@ -394,7 +394,7 @@ class AgentBrain:
 
           
             if self.agent_cell.exist_breeze():
-                valid_adj_cell: Cell.Cell
+                valid_adj_cell: cell.Cell
                 for valid_adj_cell in valid_adj_cell_list:
                     print("Infer: ", end='')
                     print(valid_adj_cell.map_pos)
@@ -403,7 +403,7 @@ class AgentBrain:
 
              
                     self.add_action(Action.INFER_PIT)
-                    not_alpha = [[valid_adj_cell.get_literal(Cell.Object.PIT, '-')]]
+                    not_alpha = [[valid_adj_cell.get_literal(cell.Object.PIT, '-')]]
                     have_pit = self.KB.infer(not_alpha)
 
                     if have_pit:
@@ -423,7 +423,7 @@ class AgentBrain:
                     else:
                       
                         self.add_action(Action.INFER_NOT_PIT)
-                        not_alpha = [[valid_adj_cell.get_literal(Cell.Object.PIT, '+')]]
+                        not_alpha = [[valid_adj_cell.get_literal(cell.Object.PIT, '+')]]
                         have_no_pit = self.KB.infer(not_alpha)
 
                        

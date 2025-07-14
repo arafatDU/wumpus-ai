@@ -141,9 +141,9 @@ class Cell:
             i = 1
         elif obj == Object.WUMPUS:
             i = 2
-        elif obj == obj.BREEZE:
+        elif obj == Object.BREEZE:
             i = 3
-        elif obj == obj.STENCH:
+        elif obj == Object.STENCH:
             i = 4
         else:
             raise TypeError('Error: ' + self.get_literal.__name__)

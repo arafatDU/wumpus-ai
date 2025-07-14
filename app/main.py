@@ -1,6 +1,4 @@
-def main():
-    print("Hello from wumpus-ai!")
+from graphic import *
 
-
-if __name__ == "__main__":
-    main()
+app = Graphic()
+app.run()

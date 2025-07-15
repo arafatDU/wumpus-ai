@@ -1,8 +1,21 @@
 import sys
 from map import *
 from agent import *
+from objects import *
 import algorithms
+import pygame.gfxdraw
+import math
+import random
 
+def draw_vertical_gradient(surface, color_top, color_bottom):
+    """Draw a vertical gradient from color_top to color_bottom on the given surface."""
+    height = surface.get_height()
+    for y in range(height):
+        ratio = y / height
+        r = int(color_top[0] * (1 - ratio) + color_bottom[0] * ratio)
+        g = int(color_top[1] * (1 - ratio) + color_bottom[1] * ratio)
+        b = int(color_top[2] * (1 - ratio) + color_bottom[2] * ratio)
+        pygame.draw.line(surface, (r, g, b), (0, y), (surface.get_width(), y))
 
 class Graphic:
     def __init__(self):
@@ -20,6 +33,8 @@ class Graphic:
         self.font = pygame.font.Font(FONT_GRINCHED, 30)
         self.noti = pygame.font.Font(FONT_GRINCHED, 15)
         self.victory = pygame.font.Font(FONT_GRINCHED, 50)
+        self.title_font = pygame.font.Font(FONT_GRINCHED, 60)
+        self.status_font = pygame.font.Font(FONT_GRINCHED, 24)
         self.all_sprites = pygame.sprite.Group()
 
         self.state = MAP
@@ -28,25 +43,65 @@ class Graphic:
         self.bg = pygame.image.load('./assets/images/win.png').convert()
         self.bg = pygame.transform.scale(self.bg, (SCREEN_WIDTH, SCREEN_HEIGHT))
         self.direct = 3
+        self.anim_time = 0
+        # Load Wumpus image for animation
+        self.wumpus_img = pygame.image.load('./assets/images/wumpus1.png').convert_alpha()
+        self.wumpus_img = pygame.transform.smoothscale(self.wumpus_img, (120, 120))
 
     def running_draw(self):
-        self.screen.fill(WHITE)
+        # Gradient background for gameplay
+        gradient = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+        draw_vertical_gradient(gradient, (230, 240, 255), (180, 200, 220))
+        self.screen.blit(gradient, (0, 0))
         self.map.draw(self.screen)
         score = self.agent.get_score()
-        text = self.font.render('Points : ' + str(score), True, BLACK)
-        textRect = text.get_rect()
-        textRect.center = (920, 25)
-        self.screen.blit(text, textRect)
+        # Modern status bar
+        pygame.draw.rect(self.screen, (30, 30, 60), (0, 0, SCREEN_WIDTH, 50), border_radius=0)
+        text = self.status_font.render(f'Points: {score}', True, (255, 255, 255))
+        self.screen.blit(text, (30, 10))
+        # Add more status info if needed
 
-    def draw_button(self, surf, rect, button_color, text_color, text):
-        pygame.draw.rect(surf, button_color, rect)
+    def draw_button(self, surf, rect, button_color, text_color, text, shadow=True, hover=False):
+        # Draw shadow
+        if shadow:
+            shadow_rect = rect.move(4, 4)
+            pygame.draw.rect(surf, (60, 60, 60, 80), shadow_rect, border_radius=15)
+        # Draw button
+        color = button_color
+        if hover:
+            color = tuple(min(255, c + 30) for c in button_color)
+        pygame.draw.rect(surf, color, rect, border_radius=15)
+        # Draw border
+        pygame.draw.rect(surf, (0, 0, 0), rect, 2, border_radius=15)
+        # Draw text
         text_surf = self.font.render(text, True, text_color)
-        text_rect = text_surf.get_rect()
-        text_rect.center = rect.center
-        self.screen.blit(text_surf, text_rect)
+        text_rect = text_surf.get_rect(center=rect.center)
+        surf.blit(text_surf, text_rect)
 
     def home_draw(self):
-        self.screen.fill(WHITE)
+        # Gradient background
+        gradient = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+        draw_vertical_gradient(gradient, (60, 120, 200), (200, 220, 255))
+        self.screen.blit(gradient, (0, 0))
+        # Title
+        title_surf = self.title_font.render("Wumpus World AI", True, (255, 255, 255))
+        title_rect = title_surf.get_rect(center=(SCREEN_WIDTH // 2, 100))
+        self.screen.blit(title_surf, title_rect)
+        # Animated Wumpus (bobbing)
+        wumpus_x = SCREEN_WIDTH // 2
+        wumpus_y = 220 + int(20 * math.sin(self.anim_time * 0.07))
+        wumpus_rect = self.wumpus_img.get_rect(center=(wumpus_x, wumpus_y))
+        self.screen.blit(self.wumpus_img, wumpus_rect)
+        # Centered Start button
+        button_width, button_height = 350, 60
+        button_x = (SCREEN_WIDTH - button_width) // 2
+        button_y = wumpus_rect.bottom + 40
+        start_rect = pygame.Rect(button_x, button_y, button_width, button_height)
+        self.mouse = pygame.mouse.get_pos()
+        hover = start_rect.collidepoint(self.mouse)
+        self.draw_button(self.screen, start_rect, (70, 170, 90), (255, 255, 255), "Start", shadow=True, hover=hover)
+        self.start_button_rect = start_rect  # Save for event handling
+        pygame.display.update()
 
     def home_event(self):
         for event in pygame.event.get():
@@ -54,68 +109,31 @@ class Graphic:
                 pygame.quit()
                 sys.exit()
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                if 235 <= self.mouse[0] <= 735 and 120 <= self.mouse[1] <= 170:
+                if hasattr(self, 'start_button_rect') and self.start_button_rect.collidepoint(event.pos):
                     self.state = RUNNING
                     self.map_i = 1
-                # elif 235 <= self.mouse[0] <= 735 and 200 <= self.mouse[1] <= 250:
-                #     self.state = RUNNING
-                #     self.map_i = 2
-                # elif 235 <= self.mouse[0] <= 735 and 280 <= self.mouse[1] <= 330:
-                #     self.state = RUNNING
-                #     self.map_i = 3
-                # elif 235 <= self.mouse[0] <= 735 and 360 <= self.mouse[1] <= 410:
-                #     self.state = RUNNING
-                #     self.map_i = 4
-                # elif 235 <= self.mouse[0] <= 735 and 440 <= self.mouse[1] <= 490:
-                #     self.state = RUNNING
-                #     self.map_i = 5
-                elif 235 <= self.mouse[0] <= 735 and 520 <= self.mouse[1] <= 570:
-                    pygame.quit()
-                    sys.exit()
-
-            self.mouse = pygame.mouse.get_pos()
-            if 235 <= self.mouse[0] <= 735 and 120 <= self.mouse[1] <= 170:
-                self.draw_button(self.screen, LEVEL_1_POS, DARK_GREY, GREEN, "Start")
-            else:
-                self.draw_button(self.screen, LEVEL_1_POS, LIGHT_GREY, BLACK, "Start")
-            # if 235 <= self.mouse[0] <= 735 and 200 <= self.mouse[1] <= 250:
-            #     self.draw_button(self.screen, LEVEL_2_POS, DARK_GREY, RED, "MAP 2")
-            # else:
-            #     self.draw_button(self.screen, LEVEL_2_POS, LIGHT_GREY, BLACK, "MAP 2")
-            # if 235 <= self.mouse[0] <= 735 and 280 <= self.mouse[1] <= 330:
-            #     self.draw_button(self.screen, LEVEL_3_POS, DARK_GREY, RED, "MAP 3")
-            # else:
-            #     self.draw_button(self.screen, LEVEL_3_POS, LIGHT_GREY, BLACK, "MAP 3")
-            # if 235 <= self.mouse[0] <= 735 and 360 <= self.mouse[1] <= 410:
-            #     self.draw_button(self.screen, LEVEL_4_POS, DARK_GREY, RED, "MAP 4")
-            # else:
-            #     self.draw_button(self.screen, LEVEL_4_POS, LIGHT_GREY, BLACK, "MAP 4")
-            # if 235 <= self.mouse[0] <= 735 and 440 <= self.mouse[1] <= 490:
-            #     self.draw_button(self.screen, LEVEL_5_POS, DARK_GREY, RED, "MAP 5")
-            # else:
-            #     self.draw_button(self.screen, LEVEL_5_POS, LIGHT_GREY, BLACK, "MAP 5")
-            # if 235 <= self.mouse[0] <= 735 and 520 <= self.mouse[1] <= 570:
-            #     self.draw_button(self.screen, EXIT_POS, DARK_GREY, RED, "EXIT")
-            # else:
-            #     self.draw_button(self.screen, EXIT_POS, LIGHT_GREY, BLACK, "EXIT")
-            pygame.display.update()
 
     def win_draw(self):
-        self.screen.fill(WHITE)
+        # Gradient background
+        gradient = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+        draw_vertical_gradient(gradient, (255, 220, 120), (255, 255, 255))
+        self.screen.blit(gradient, (0, 0))
         self.screen.blit(self.bg, (0, 0))
-
+        # Semi-transparent overlay
+        overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 120))
+        self.screen.blit(overlay, (0, 0))
+        # Win message
         if self.state == WIN:
-            text = self.victory.render('VICTORY!!!', True, BLACK)
+            text = self.victory.render('VICTORY!!!', True, (255, 255, 0))
         elif self.state == TRYBEST:
-            text = self.victory.render('TRY BEST!!!', True, BLACK)
-
-        textRect = text.get_rect()
-        textRect.center = (600, 50)
+            text = self.victory.render('TRY BEST!!!', True, (255, 255, 0))
+        textRect = text.get_rect(center=(SCREEN_WIDTH // 2, 100))
         self.screen.blit(text, textRect)
         score = self.agent.get_score()
-        text = self.victory.render('Scored: ' + str(score), True, BLACK)
-        textRect.center = (500, 100)
-        self.screen.blit(text, textRect)
+        score_text = self.victory.render('Scored: ' + str(score), True, (255, 255, 255))
+        scoreRect = score_text.get_rect(center=(SCREEN_WIDTH // 2, 200))
+        self.screen.blit(score_text, scoreRect)
 
     def win_event(self):
         for event in pygame.event.get():
@@ -125,10 +143,10 @@ class Graphic:
         pygame.display.update()
         pygame.time.delay(200)
         self.state = MAP
-        
-        
+
     def run(self):
         while True:
+            self.anim_time += 1  # For animation
             if self.state == MAP:
                 self.home_draw()
                 self.home_event()

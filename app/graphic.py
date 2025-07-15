@@ -33,7 +33,12 @@ class Graphic:
         self.font = pygame.font.Font(FONT_GRINCHED, 30)
         self.noti = pygame.font.Font(FONT_GRINCHED, 15)
         self.victory = pygame.font.Font(FONT_GRINCHED, 50)
-        self.title_font = pygame.font.Font(FONT_GRINCHED, 60)
+        # Use a cooler font with fallback
+        try:
+            self.title_font = pygame.font.Font('./assets/fonts/GroovyLiquor.ttf', 85)
+        except:
+            self.title_font = pygame.font.Font(None, 80)  # System default as fallback
+        self.subtitle_font = pygame.font.Font(FONT_GRINCHED, 24)
         self.status_font = pygame.font.Font(FONT_GRINCHED, 24)
         self.all_sprites = pygame.sprite.Group()
 
@@ -44,9 +49,20 @@ class Graphic:
         self.bg = pygame.transform.scale(self.bg, (SCREEN_WIDTH, SCREEN_HEIGHT))
         self.direct = 3
         self.anim_time = 0
-        # Load Wumpus image for animation
+        self.pulse_time = 0
+        # Load Wumpus image for animation with better scaling
         self.wumpus_img = pygame.image.load('./assets/images/wumpus1.png').convert_alpha()
-        self.wumpus_img = pygame.transform.smoothscale(self.wumpus_img, (120, 120))
+        self.wumpus_img = pygame.transform.smoothscale(self.wumpus_img, (140, 140))
+        
+        # Create particles for background effect
+        self.particles = []
+        for _ in range(30):
+            self.particles.append({
+                'x': random.randint(0, SCREEN_WIDTH),
+                'y': random.randint(0, SCREEN_HEIGHT),
+                'speed': random.uniform(0.5, 2.0),
+                'size': random.randint(1, 3)
+            })
 
     def running_draw(self):
         # Gradient background for gameplay
@@ -78,29 +94,93 @@ class Graphic:
         text_rect = text_surf.get_rect(center=rect.center)
         surf.blit(text_surf, text_rect)
 
+    def draw_particles(self):
+        """Draw animated background particles"""
+        for particle in self.particles:
+            # Update particle position
+            particle['y'] += particle['speed']
+            if particle['y'] > SCREEN_HEIGHT:
+                particle['y'] = -10
+                particle['x'] = random.randint(0, SCREEN_WIDTH)
+            
+            # Draw particle with slight transparency
+            alpha = int(100 + 50 * math.sin(self.anim_time * 0.05 + particle['x'] * 0.01))
+            color = (255, 255, 255, alpha)
+            pygame.gfxdraw.filled_circle(self.screen, int(particle['x']), int(particle['y']), particle['size'], (255, 255, 255))
+
     def home_draw(self):
-        # Gradient background
+        # Enhanced gradient background with more depth
         gradient = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
-        draw_vertical_gradient(gradient, (60, 120, 200), (200, 220, 255))
+        draw_vertical_gradient(gradient, (45, 100, 180), (120, 180, 240))
         self.screen.blit(gradient, (0, 0))
-        # Title
-        title_surf = self.title_font.render("Wumpus World AI", True, (255, 255, 255))
+        
+        # Draw animated particles
+        self.draw_particles()
+        
+        # Title with glow effect
+        title_text = "Wumpus World AI"
+        # Create glow effect by drawing multiple times with different colors
+        for offset in range(5, 0, -1):
+            glow_color = (100 + offset * 20, 150 + offset * 20, 255)
+            glow_surf = self.title_font.render(title_text, True, glow_color)
+            glow_rect = glow_surf.get_rect(center=(SCREEN_WIDTH // 2 + offset//2, 100 + offset//2))
+            self.screen.blit(glow_surf, glow_rect)
+        
+        # Main title
+        title_surf = self.title_font.render(title_text, True, (255, 255, 255))
         title_rect = title_surf.get_rect(center=(SCREEN_WIDTH // 2, 100))
         self.screen.blit(title_surf, title_rect)
-        # Animated Wumpus (bobbing)
+        
+        # Subtitle
+        subtitle_text = "Intelligent Agent Navigation"
+        subtitle_surf = self.subtitle_font.render(subtitle_text, True, (200, 220, 255))
+        subtitle_rect = subtitle_surf.get_rect(center=(SCREEN_WIDTH // 2, 140))
+        self.screen.blit(subtitle_surf, subtitle_rect)
+        
+        # Enhanced Wumpus animation with rotation and scaling
         wumpus_x = SCREEN_WIDTH // 2
-        wumpus_y = 220 + int(20 * math.sin(self.anim_time * 0.07))
-        wumpus_rect = self.wumpus_img.get_rect(center=(wumpus_x, wumpus_y))
-        self.screen.blit(self.wumpus_img, wumpus_rect)
-        # Centered Start button
-        button_width, button_height = 350, 60
+        base_y = 240
+        bob_offset = int(25 * math.sin(self.anim_time * 0.08))
+        wumpus_y = base_y + bob_offset
+        
+        # Add slight rotation
+        rotation_angle = 5 * math.sin(self.anim_time * 0.05)
+        
+        # Add pulsing scale effect
+        scale_factor = 1.0 + 0.1 * math.sin(self.anim_time * 0.1)
+        scaled_size = int(140 * scale_factor)
+        
+        # Apply transformations
+        rotated_wumpus = pygame.transform.rotate(self.wumpus_img, rotation_angle)
+        scaled_wumpus = pygame.transform.smoothscale(rotated_wumpus, (scaled_size, scaled_size))
+        
+        # Draw the wumpus (removed shadow effect)
+        wumpus_rect = scaled_wumpus.get_rect(center=(wumpus_x, wumpus_y))
+        self.screen.blit(scaled_wumpus, wumpus_rect)
+        
+        # Enhanced Start button with better styling
+        button_width, button_height = 380, 70
         button_x = (SCREEN_WIDTH - button_width) // 2
-        button_y = wumpus_rect.bottom + 40
+        button_y = wumpus_rect.bottom + 60
         start_rect = pygame.Rect(button_x, button_y, button_width, button_height)
+        
         self.mouse = pygame.mouse.get_pos()
         hover = start_rect.collidepoint(self.mouse)
-        self.draw_button(self.screen, start_rect, (70, 170, 90), (255, 255, 255), "Start", shadow=True, hover=hover)
-        self.start_button_rect = start_rect  # Save for event handling
+        
+        # Button glow effect when hovering
+        if hover:
+            glow_rect = start_rect.inflate(10, 10)
+            pygame.draw.rect(self.screen, (100, 200, 120, 100), glow_rect, border_radius=20)
+        
+        self.draw_button(self.screen, start_rect, (60, 150, 80), (255, 255, 255), "🚀 Start Adventure", shadow=True, hover=hover)
+        self.start_button_rect = start_rect
+        
+        # Add instruction text
+        instruction_text = "Navigate the dangerous cave using AI logic!"
+        instruction_surf = self.subtitle_font.render(instruction_text, True, (180, 200, 240))
+        instruction_rect = instruction_surf.get_rect(center=(SCREEN_WIDTH // 2, start_rect.bottom + 40))
+        self.screen.blit(instruction_surf, instruction_rect)
+        
         pygame.display.update()
 
     def home_event(self):

@@ -3,10 +3,10 @@ import pygame
 # Speed
 SPEED = 50          # Change the speed of the game here.
 
-# Window
-SCREEN_WIDTH = 1200
-SCREEN_HEIGHT = 710
-CAPTION = 'Wumpus World'
+# Window - Enhanced for better gaming experience
+SCREEN_WIDTH = 1600
+SCREEN_HEIGHT = 900
+CAPTION = 'Wumpus World AI - Strategic Cave Explorer'
 
 # Cell
 IMG_INITIAL_CELL = './assets/images/initial_cell.png'

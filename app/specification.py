@@ -14,7 +14,7 @@ IMG_DISCOVERED_CELL = './assets/images/discovered_cell.png'
 
 # Object
 IMG_PIT = './assets/images/pit.png'
-IMG_WUMPUS = './assets/images/wumpus.png'
+IMG_WUMPUS = './assets/images/wumpus1.png'
 IMG_GOLD = './assets/images/gold.png'
 
 # Hunter

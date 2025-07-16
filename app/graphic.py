@@ -188,17 +188,14 @@ class Graphic:
         
         # Enhanced score display
         score_color = (100, 255, 100) if score >= 0 else (255, 100, 100)
-        try:
-            score_font = pygame.font.Font('./assets/fonts/GroovyLiquor.ttf', 36)
-            hud_font = pygame.font.Font('./assets/fonts/GroovyLiquor.ttf', 24)
-        except:
-            score_font = pygame.font.Font(None, 36)
-            hud_font = pygame.font.Font(None, 24)
+        # Use system default font for better number display
+        score_font = pygame.font.Font(None, 36)
+        hud_font = pygame.font.Font(None, 24)
         
         # Score with background panel
         score_panel_width = 250
         self.draw_modern_ui_panel(20, 15, score_panel_width, 60, (25, 35, 55), (80, 120, 160))
-        score_text = score_font.render(f"💎 {score}", True, score_color)
+        score_text = score_font.render(f"{score}", True, score_color)
         self.screen.blit(score_text, (40, 30))
         score_label = self.noti.render("SCORE", True, (150, 170, 200))
         self.screen.blit(score_label, (40, 15))
